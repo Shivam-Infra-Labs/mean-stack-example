@@ -1,3 +1,4 @@
+
 name: CI
 
 on:
@@ -6,30 +7,38 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * 1'
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
 
 jobs:
   build-and-smoke:
+    name: Build and Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+
     strategy:
-      max-parallel: 1
+      fail-fast: false
       matrix:
-        # Angular 22 requires Node ^22.22.3 || ^24.15.0 || >=26.0.0
-        node-version: [24.18.0, 26.5.0]
+        node-version: [22.x, 24.x]
 
     services:
       mongodb:
-        image: mongo:latest
+        image: mongo:4.4
+        ports:
+          - 27017:27017
         options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand({ ping: 1 })'"
+          --health-cmd "mongo --quiet --eval 'db.adminCommand({ ping: 1 })'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 27017:27017
+
+    env:
+      DATABASE_URI: mongodb://127.0.0.1:27017/meanStackExample?appName=mean-stack-example-ci
+      PORT: 5300
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -37,96 +46,176 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            client/package-lock.json
 
-      - name: Install dependencies
+      - name: Display runtime versions
+        run: |
+          node --version
+          npm --version
+
+      # Install dependencies using committed lockfiles
+
+      - name: Install root dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install server dependencies
+        working-directory: server
         run: npm ci
 
-      - name: Build
-        env:
-          DATABASE_URI: mongodb://localhost:27017/
-        run: npm run build
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
 
-      - name: Server lint tests
-        env:
-          DATABASE_URI: mongodb://localhost:27017/
+      # Build
+
+      - name: Build TypeScript server
+        run: npm run build:server
+
+      - name: Build Angular client
+        run: npm run build:client
+
+      # Tests
+
+      - name: Server lint checks
         run: npm run test:server
 
-      - name: Integration tests
+      - name: Client unit tests
+        run: npm run test:client -- --watch=false
+
+      - name: Server integration tests
         run: npm run test:integration
 
-      - name: Seed demo data
-        env:
-          DATABASE_URI: mongodb://localhost:27017/meanStackExample?appName=mean-stack-example-ci
+      # Database verification
+
+      - name: Seed demo database
         run: npm run seed
 
-      - name: Start API
-        env:
-          DATABASE_URI: mongodb://localhost:27017/meanStackExample?appName=mean-stack-example-ci
-          PORT: 5300
+      # Start real API server
+
+      - name: Start API server
         run: |
           npm run start:server > /tmp/server.log 2>&1 &
           echo $! > /tmp/server.pid
 
-      - name: Wait for API health
+      - name: Wait for API health check
         run: |
-          for i in {1..30}; do
-            if curl -fsS http://localhost:5300/healthcheck >/dev/null; then
-              echo "API is ready"
+          for i in {1..45}; do
+            if curl -fsS http://127.0.0.1:5300/healthcheck; then
+              echo
+              echo "API is healthy"
               exit 0
             fi
+
             sleep 1
           done
-          echo "API did not become ready"
+
+          echo "API startup failed"
+          echo "===== SERVER LOGS ====="
           cat /tmp/server.log
           exit 1
 
-      - name: Smoke check employee list endpoint
-        run: curl -fsS http://localhost:5300/employees
+      # API smoke tests
 
-      - name: Stop API
+      - name: Smoke test employee endpoint
+        run: |
+          response=$(curl -fsS http://127.0.0.1:5300/employees)
+
+          echo "$response"
+
+          echo "$response" | jq -e \
+            'type == "array" and length == 5'
+
+      - name: Stop API server
         if: always()
         run: |
           if [ -f /tmp/server.pid ]; then
-            kill "$(cat /tmp/server.pid)" || true
+            SERVER_PID=$(cat /tmp/server.pid)
+            pkill -TERM -P "$SERVER_PID" || true
+            kill "$SERVER_PID" || true
           fi
 
+          echo "API cleanup completed"
+
   notify-on-failure:
+    name: Notify CI Failure
     needs: build-and-smoke
-    if: failure()
+    if: ${{ failure() && github.event_name != 'pull_request' }}
+
     runs-on: ubuntu-latest
+
     permissions:
       issues: write
+
     steps:
-      - name: File or update CI failure issue for @mongodb-developer/learning-fuel
+      - name: Create or update CI failure issue
         uses: actions/github-script@v7
         with:
           script: |
             const title = `CI failure on ${context.ref}`;
+
             const body = [
-              '@mongodb-developer/learning-fuel the CI workflow failed.',
+              'The automated CI workflow has failed.',
               '',
               `Workflow: ${context.workflow}`,
-              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `Branch/Ref: ${context.ref}`,
+              `Run ID: ${context.runId}`,
+              `Run URL: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             ].join('\n');
-            const { data: existing } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: 'ci-failure',
-            });
-            if (existing.length > 0) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: existing[0].number,
-                body,
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Ensure the CI failure label exists.
+            try {
+              await github.rest.issues.getLabel({
+                owner,
+                repo,
+                name: 'ci-failure',
               });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title,
-                body,
+            } catch (error) {
+              if (error.status !== 404) throw error;
+
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: 'ci-failure',
+                color: 'd73a4a',
+                description: 'Automated CI workflow failures',
+              });
+            }
+
+            // Find an existing open CI failure issue.
+            const { data: issues } =
+              await github.rest.issues.listForRepo({
+                owner,
+                repo,
+                state: 'open',
                 labels: ['ci-failure'],
               });
+
+            if (issues.length > 0) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issues[0].number,
+                body,
+              });
+
+              core.info(
+                `Updated existing CI issue #${issues[0].number}`
+              );
+            } else {
+              const { data: issue } =
+                await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title,
+                  body,
+                  labels: ['ci-failure'],
+                });
+
+              core.info(`Created CI issue #${issue.number}`);
             }

@@ -263,7 +263,7 @@ The normal request/response path is:
 
 **Browser → NGINX → Express API → MongoDB → Express API → NGINX → Browser**
 
-![Application Request Flow](architecture/Application-Request-Flow.png)
+![Application Request Flow](architecture/Applicatio-Request-Flow.png)
 
 The exact API methods and request payloads are defined in the application source. See the route file and frontend service code before relying on this README as a complete API contract.
 
@@ -372,7 +372,7 @@ The MongoDB Deployment references a PersistentVolumeClaim named `mongo-data-pvc`
 
 ### Security & Configuration Architecture
 
-![Security & Configuration Architecture](architecture/Security-Configuration-Architecture.png)
+![Security & Configuration Architecture](architecture/Security & Configuration Architecture.png)
 
 ## CI Workflow
 

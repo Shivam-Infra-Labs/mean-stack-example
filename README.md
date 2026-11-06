@@ -192,7 +192,7 @@ Show a successful run of the repository's CI workflow.
 
 The Docker Compose deployment runs the Angular frontend, Node.js/Express backend, and MongoDB database as separate services.
 
-![Docker Compose Architecture](architecture/docker-compose-architecture.png)
+![Docker Compose Architecture](architecture/Docker-Compose-Architecture.png)
 
 ### Prerequisites
 
@@ -263,7 +263,7 @@ The normal request/response path is:
 
 **Browser → NGINX → Express API → MongoDB → Express API → NGINX → Browser**
 
-![Application Request Flow](architecture/application-request-flow.png)
+![Application Request Flow](architecture/Application-Request-Flow.png)
 
 The exact API methods and request payloads are defined in the application source. See the route file and frontend service code before relying on this README as a complete API contract.
 
@@ -279,7 +279,7 @@ The repository includes Kubernetes manifests under `k8s/` and a Kind configurati
 
 ### Kubernetes architecture
 
-![Kubernetes Architecture](architecture/kubernetes-architecture.png)
+![Kubernetes Architecture](architecture/Kubernete-Architecture.png)
 
 ### Deployment overview
 
@@ -314,7 +314,7 @@ The Kubernetes manifests include Prometheus and Grafana. Prometheus is configure
 
 ### Monitoring flow
 
-![Monitoring Flow](architecture/monitoring-flow.png)
+![Monitoring Flow](architecture/Monitoring-Flow.png)
 
 **Verification before claiming a working dashboard:** check that the Prometheus target is `UP`, confirm Grafana's Prometheus data source is configured, and verify the dashboard displays real metrics. The presence of deployment manifests alone does not prove that a data source or dashboard has been provisioned.
 
@@ -372,7 +372,7 @@ The MongoDB Deployment references a PersistentVolumeClaim named `mongo-data-pvc`
 
 ### Security & Configuration Architecture
 
-![Security & Configuration Architecture](architecture/security-configuration-architecture.png)
+![Security & Configuration Architecture](architecture/Security-Configuration-Architecture.png)
 
 ## CI Workflow
 

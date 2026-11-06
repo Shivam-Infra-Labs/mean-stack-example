@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mean-server-config
+  namespace: mean-app
+data:
+  PORT: "5300"

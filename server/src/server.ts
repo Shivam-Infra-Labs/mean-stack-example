@@ -1,10 +1,11 @@
+import client from "prom-client";
 import * as dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import { connectToDatabase } from "./database";
 import { employeeRouter } from "./employee.routes";
 
-// Load environment variables from the .env file, where the DATABASE_URI is configured
+// Load environment variables
 dotenv.config();
 
 const { DATABASE_URI } = process.env;
@@ -20,13 +21,23 @@ if (!DATABASE_URI) {
 connectToDatabase(DATABASE_URI)
   .then(() => {
     const app = express();
+
+    const register = new client.Registry();
+    client.collectDefaultMetrics({ register });
+
     app.use(cors());
+
     app.get("/healthcheck", (_req, res) => {
       res.status(200).json({ status: "ok" });
     });
+
+    app.get("/metrics", async (_req, res) => {
+      res.set("Content-Type", register.contentType);
+      res.end(await register.metrics());
+    });
+
     app.use("/employees", employeeRouter);
 
-    // start the Express server
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}...`);
     });

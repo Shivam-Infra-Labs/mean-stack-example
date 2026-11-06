@@ -1,803 +1,485 @@
-# MEAN Stack Example: Employee Records App
+<div align="center">
 
-A full-stack employee management application built with the **MEAN stack** — MongoDB, Express, Angular, and Node.js.
+# MEAN Stack Example — Employee Records Application
 
-This repository started from the original MEAN Stack Example application and has been extended as a practical **DevOps learning project**. The application is now containerized with Docker Compose, with Kubernetes and AWS/EKS planned as the next stages.
+<img src="architecture/MEAN Stack DevOps Infrastructure Banner.png" alt="MEAN Stack Example — Employee Records Application" width="100%">
 
-> **Current focus:** Phase 1 — Docker Compose deployment
+### A full-stack MEAN application with a hands-on DevOps deployment workflow
 
----
+[![Angular](https://img.shields.io/badge/Angular-Frontend-DD0031?logo=angular&logoColor=white)](https://angular.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-Runtime-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-Backend-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Language-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Docker](https://img.shields.io/badge/Docker-Containers-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Docker Compose](https://img.shields.io/badge/Docker_Compose-Orchestration-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Orchestration-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Kind](https://img.shields.io/badge/Kind-Local_Kubernetes-6B46C1?logo=kubernetes&logoColor=white)](https://kind.sigs.k8s.io/)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions)
+[![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C?logo=prometheus&logoColor=white)](https://prometheus.io/)
+[![Grafana](https://img.shields.io/badge/Grafana-Visualization-F46800?logo=grafana&logoColor=white)](https://grafana.com/)
+[![NGINX](https://img.shields.io/badge/NGINX-Web_Server-009639?logo=nginx&logoColor=white)](https://nginx.org/)
 
-## Project Overview
+[Overview](#overview) • [Architecture](#architecture) • [Screenshots](#screenshots) • [Docker](#run-with-docker-compose) • [Kubernetes](#kubernetes-deployment-with-kind) • [Monitoring](#monitoring)
 
-The application provides a simple employee record management system with full CRUD operations:
-
-- Create employee records
-- Read employee records
-- Update employee records
-- Delete employee records
-
-The Angular frontend communicates with a Node.js/Express API, while employee data is stored in MongoDB.
-
-The original application architecture was:
-
-```text
-Angular Frontend → Express API → MongoDB
-```
-
-The current Dockerized architecture is:
-
-```text
-                    ┌─────────────────────────┐
-                    │       Browser            │
-                    │     localhost:8080       │
-                    └────────────┬────────────┘
-                                 │
-                                 ▼
-                    ┌─────────────────────────┐
-                    │   Angular + NGINX       │
-                    │      mean-client        │
-                    │        :80              │
-                    └────────────┬────────────┘
-                                 │ /api/
-                                 ▼
-                    ┌─────────────────────────┐
-                    │   Node.js + Express      │
-                    │      mean-server        │
-                    │        :5300            │
-                    └────────────┬────────────┘
-                                 │
-                                 ▼
-                    ┌─────────────────────────┐
-                    │       MongoDB 4.4        │
-                    │        mean-db           │
-                    │        :27017            │
-                    └─────────────────────────┘
-```
+</div>
 
 ---
 
-## Current Project Status
+## Overview
 
-| Phase | Status | Description |
+This repository contains a full-stack **Employee Records Application** built with the **MEAN stack** — MongoDB, Express, Angular, and Node.js — and extended into a practical DevOps project.
+
+The application supports employee record management through CRUD functionality (Create, Read, Update, and Delete). The project focuses on packaging, deploying, operating, and monitoring the application using container and Kubernetes tooling.
+
+### Project highlights
+
+- **Full-stack application:** Angular frontend with a Node.js, Express, and TypeScript REST API.
+- **Containerization:** Separate frontend, backend, and database services using Docker.
+- **Local orchestration:** Docker Compose for multi-container development and testing.
+- **Kubernetes deployment:** Local Kubernetes deployment using Kind and manifests in `k8s/`.
+- **Monitoring foundation:** Backend metrics exposed for Prometheus, with Prometheus and Grafana components included in the Kubernetes manifests.
+- **Continuous Integration:** GitHub Actions workflow for builds, tests, health checks, and smoke tests.
+
+> **Project scope:** The repository includes a GitHub Actions CI workflow. Docker Compose and Kubernetes are separate deployment options. An automated Continuous Deployment (CD) pipeline is not included.
+
+## Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Repository Structure](#repository-structure)
+- [Screenshots](#screenshots)
+- [Run with Docker Compose](#run-with-docker-compose)
+- [Application Request Flow](#application-request-flow)
+- [Kubernetes Deployment with Kind](#kubernetes-deployment-with-kind)
+- [Monitoring](#monitoring)
+- [API Endpoints](#api-endpoints)
+- [Persistence](#persistence)
+- [Security and Configuration Notes](#security-and-configuration-notes)
+- [CI Workflow](#ci-workflow)
+- [Useful Commands](#useful-commands)
+- [Documentation](#documentation)
+- [Known Limitations and Roadmap](#known-limitations-and-roadmap)
+- [Attribution](#attribution)
+- [Author](#author)
+
+## Architecture
+
+### Overall system architecture
+
+The project supports two deployment paths:
+
+1. **Docker Compose** — runs the frontend, backend, and MongoDB as separate containers.
+2. **Kubernetes with Kind** — deploys the application to a local Kubernetes cluster using the supplied manifests.
+
+The backend also exposes metrics for Prometheus monitoring.
+
+![Overall System Architecture](architecture/Overall-System-Architecture.png)
+
+### Architecture diagrams
+
+| Diagram | Description |
+|---|---|
+| [Overall System Architecture](architecture/Overall-System-Architecture.png) | Application components, deployment options, and monitoring |
+| [Application Request Flow](architecture/application-request-flow.png) | Browser requests through NGINX, Express, and MongoDB |
+| [Docker Compose Architecture](architecture/docker-compose-architecture.png) | Compose services, networking, ports, and persistent volume |
+| [Kubernetes Architecture](architecture/kubernetes-architecture.png) | Kind port mapping, Kubernetes Services, Pods, and database PVC |
+| [Monitoring Flow](architecture/monitoring-flow.png) | Backend metrics, Prometheus scraping, and Grafana visualization |
+| [Security & Configuration Architecture](architecture/security-configuration-architecture.png) | Configuration, Secret references, health checks, monitoring, and storage |
+
+> Keep the diagram files at the paths shown above. If a diagram is not available in the repository yet, add it before publishing the corresponding image link. Mermaid source may be maintained in [`docs/architecture.md`](docs/architecture.md).
+
+## Technology Stack
+
+| Layer | Technology | Purpose |
 |---|---|---|
-| Phase 1 | ✅ Completed | Docker + Docker Compose |
-| Phase 2 | 🚧 Planned | Kubernetes deployment |
-| Phase 3 | ⏳ Planned | Advanced Kubernetes |
-| Phase 4 | ⏳ Planned | AWS / EKS deployment |
+| Frontend | Angular | Employee records user interface |
+| Web server / reverse proxy | NGINX | Serves Angular assets and proxies `/api/` requests |
+| Backend | Node.js, Express, TypeScript | REST API and application logic |
+| Database | MongoDB | Employee record storage |
+| Containers | Docker | Builds and runs application containers |
+| Container orchestration | Docker Compose | Runs the application services together |
+| Local Kubernetes | Kind, Kubernetes | Local cluster and application orchestration |
+| Metrics | `prom-client`, Prometheus | Exposes and collects backend metrics |
+| Dashboards | Grafana | Visualizes metrics when a data source and dashboard are configured |
+| CI | GitHub Actions | Automates build, test, health-check, and smoke-test jobs |
 
----
-
-## Tech Stack
-
-### Application
-
-- **Frontend:** Angular
-- **Backend:** Node.js + Express + TypeScript
-- **Database:** MongoDB
-- **API:** REST / JSON
-
-### DevOps
-
-- Docker
-- Docker Compose
-- NGINX
-- Multi-stage Docker builds
-- Docker healthcheck
-- Named Docker volume
-- Docker network / service discovery
-
-### Planned
-
-- Kubernetes
-- Ingress
-- ConfigMaps / Secrets
-- Probes
-- HPA
-- RBAC
-- NetworkPolicy
-- CI/CD
-- AWS EKS
-
----
-
-## Project Structure
+## Repository Structure
 
 ```text
 mean-stack-example/
-│
 ├── .github/
-│   ├── CODEOWNERS
 │   └── workflows/
 │       └── ci.yml
-│
 ├── client/
 │   ├── src/
 │   ├── Dockerfile
-│   ├── nginx.conf
-│   ├── .dockerignore
-│   └── ...
-│
+│   └── nginx.conf
 ├── server/
 │   ├── src/
 │   ├── scripts/
 │   ├── tests/
 │   ├── Dockerfile
-│   ├── .dockerignore
-│   ├── .env.example
-│   └── ...
-│
+│   └── .env.example
 ├── docs/
 │   ├── architecture.md
 │   ├── deployment-guide.md
-│   └── troubleshooting.md
-│
+│   ├── troubleshooting.md
+│   └── diagrams/
+├── k8s/
+│   ├── app/
+│   ├── monitoring/
+│   ├── kind-config.yaml
+│   └── namespace.yaml
+├── architecture/
+│   └── ... architecture diagrams and banner
+├── screenshots/
+│   └── ... project screenshots
 ├── docker-compose.yml
 ├── README.md
 ├── LICENSE
-├── NOTICE
-└── .gitignore
-
+└── NOTICE
 ```
 
----
+This is a simplified view of the main files. The repository contains additional application and configuration files.
 
-# Docker Deployment
+## Screenshots
 
-## Docker Compose Services
+Screenshots make it easier to understand the application and verify the project setup. Add your own screenshots to the `screenshots/` directory and use the filenames below, or update the paths to match your actual files.
 
-The application is split into three containers:
+### 1. Application interface
 
-| Service | Container | Purpose | Port |
-|---|---|---|---|
-| `client` | `mean-client` | Angular + NGINX | `8080 → 80` |
-| `server` | `mean-server` | Express API | `5300 → 5300` |
-| `database` | `mean-db` | MongoDB | internal `27017` |
+Show the employee records application running in the browser.
 
-MongoDB is intentionally **not published to the host**. The backend reaches it through the Docker Compose service name:
+![Application Interface](screenshots/application-ui.png)
 
-```text
-mongodb://database:27017/
-```
+### 2. Docker Compose services
 
-Docker's internal DNS resolves `database` to the MongoDB container.
+Show the frontend, backend, and database containers running.
 
----
+![Docker Compose Services](screenshots/docker-compose-services.png)
 
-## Why NGINX Is Used
+### 3. Kubernetes deployment
 
-The Angular application is built into static production files and served by NGINX.
+Show the application Pods, Services, and PersistentVolumeClaims.
 
-NGINX also acts as a reverse proxy for the backend API.
+![Kubernetes Resources](screenshots/kubernetes-resources.png)
 
-For example:
+### 4. Prometheus targets
 
-```text
-Browser
-   │
-   ├── /              → Angular application
-   │
-   └── /api/employees → NGINX
-                           │
-                           ▼
-                     mean-server:5300
-                           │
-                           ▼
-                        MongoDB
-```
+Show the backend scrape target and its health status in Prometheus.
 
-The `/api/` prefix is removed by the NGINX proxy configuration before the request reaches Express.
+![Prometheus Targets](screenshots/prometheus-targets.png)
 
-Therefore:
+### 5. Grafana dashboard
 
-```text
-/api/employees
-```
+Add a screenshot after configuring the Prometheus data source and confirming that the dashboard displays real metrics.
 
-is forwarded internally as:
+![Grafana Dashboard](screenshots/grafana-dashboard.png)
 
-```text
-/employees
-```
+### 6. GitHub Actions CI
 
-which matches the backend route.
+Show a successful run of the repository's CI workflow.
 
----
+![GitHub Actions CI](screenshots/github-actions-ci.png)
 
-# Quick Start
+> **Screenshot note:** These are image paths/placeholders for the repository. Add the corresponding image files before expecting them to render on GitHub. Do not present a dashboard or workflow as successful until you have verified it.
 
-## Prerequisites
+## Run with Docker Compose
 
-Install:
+### Docker Compose architecture
 
-- Docker
+The Docker Compose deployment runs the Angular frontend, Node.js/Express backend, and MongoDB database as separate services.
+
+![Docker Compose Architecture](architecture/Docker-Compose-Architecture.png)
+
+### Prerequisites
+
+- Docker Engine
 - Docker Compose plugin
 
-Verify:
+Verify the installation:
 
 ```bash
 docker --version
 docker compose version
 ```
 
-No local Node.js or MongoDB installation is required for the Docker deployment.
+A local Node.js or MongoDB installation is not required for the containerized deployment.
 
----
+### 1. Validate the configuration
 
-## 1. Clone the Repository
-
-```bash
-git clone https://github.com/Shivam-Infra-Labs/mean-stack-example
-cd mean-stack-example
-```
-
----
-
-## 2. Validate the Compose Configuration
-
-Before starting the application:
+Run from the repository root:
 
 ```bash
 docker compose config
 ```
 
-If the configuration is valid, Docker Compose will render the final configuration without errors.
-
----
-
-## 3. Build the Images
+### 2. Build and start the services
 
 ```bash
-docker compose build
+docker compose up --build -d
 ```
 
-This builds:
-
-- Angular + NGINX image
-- Node.js + Express image
-
-MongoDB uses the official `mongo:4.4` image.
-
----
-
-## 4. Start the Application
-
-```bash
-docker compose up -d
-```
-
-Check the containers:
+Check service status:
 
 ```bash
 docker compose ps
 ```
 
-Expected services:
+### 3. Open the application
 
-```text
-mean-client
-mean-server
-mean-db
-```
+Visit **http://localhost:8080** in your browser.
 
----
+### Docker Compose services
 
-## 5. Open the Application
+| Service | Container | Port / access | Role |
+|---|---|---|---|
+| `client` | `mean-client` | Host `8080` → container `80` | Angular frontend served by NGINX |
+| `server` | `mean-server` | Host `5300` → container `5300` | Express API |
+| `database` | `mean-db` | Internal port `27017` | MongoDB database |
 
-Open:
-
-```text
-http://localhost:8080
-```
-
-The Employee Management application should be available.
-
----
-
-# Health Check
-
-The backend exposes:
-
-```text
-GET /healthcheck
-```
-
-From the host:
-
-```bash
-curl http://localhost:5300/healthcheck
-```
-
-Expected response:
-
-```json
-{"status":"ok"}
-```
-
-The MongoDB container also has a Docker healthcheck using:
-
-```bash
-mongo --eval "db.adminCommand('ping')"
-```
-
-The backend waits for MongoDB to become healthy before starting.
-
----
-
-# REST API
-
-Backend base URL:
-
-```text
-http://localhost:5300
-```
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/healthcheck` | Check API health |
-| `GET` | `/employees` | Retrieve all employees |
-| `GET` | `/employees/:id` | Retrieve one employee |
-| `POST` | `/employees` | Create an employee |
-| `PUT` | `/employees/:id` | Update an employee |
-| `DELETE` | `/employees/:id` | Delete an employee |
-
-Through the frontend NGINX proxy, API requests use:
-
-```text
-/api/employees
-```
-
-Example request body:
-
-```json
-{
-  "name": "Jane Smith",
-  "position": "Developer",
-  "level": "senior"
-}
-```
-
-Supported levels:
-
-```text
-junior
-mid
-senior
-```
-
----
-
-# Database
-
-The backend connects to MongoDB using the Docker service name:
+MongoDB is **not published to a host port** in the supplied Compose configuration. The backend reaches it through Compose service discovery:
 
 ```text
 mongodb://database:27017/
 ```
 
-The application uses:
+### Docker Compose request path
+
+1. The browser loads the Angular application from `http://localhost:8080`.
+2. NGINX serves the static frontend files.
+3. Requests sent to `/api/` are reverse-proxied to the `server` service on port `5300`.
+4. NGINX removes the `/api/` prefix because the `proxy_pass` target ends with `/`.
+5. Express handles the request and reads or updates employee records in MongoDB.
+6. The API response returns through NGINX to the browser.
+
+For example, `/api/employees` is proxied to `/employees`, matching the backend router mount.
+
+## Application Request Flow
+
+The normal request/response path is:
+
+**Browser → NGINX → Express API → MongoDB → Express API → NGINX → Browser**
+
+![Application Request Flow](architecture/Applicatio-Request-Flow.png)
+
+The exact API methods and request payloads are defined in the application source. See the route file and frontend service code before relying on this README as a complete API contract.
+
+## Kubernetes Deployment with Kind
+
+The repository includes Kubernetes manifests under `k8s/` and a Kind configuration that maps host address `127.0.0.1:8081` to node port `30080`.
+
+- The client Service uses NodePort `30080`.
+- The backend and database use internal Kubernetes Services.
+- The backend manifest references a Secret named `mean-mongo-credentials` with the key `DATABASE_URI`.
+
+> **Important:** The database Deployment uses `mongo:4.4` with authentication enabled. Before deploying to a fresh cluster, verify that MongoDB is initialized with credentials consistent with the backend's `DATABASE_URI`. Creating a Kubernetes Secret does not itself create a MongoDB user.
+
+### Kubernetes architecture
+
+![Kubernetes Architecture](architecture/Kubernete-Architecture.png)
+
+### Deployment overview
+
+The typical workflow is:
+
+1. Create a Kind cluster using `k8s/kind-config.yaml`.
+2. Build the client and server images.
+3. Load those images into the Kind cluster.
+4. Create the required Kubernetes Secret locally.
+5. Apply the namespace, application, and monitoring manifests.
+6. Verify Pods, Services, PVCs, logs, and the Prometheus target.
+7. Open the application at **http://127.0.0.1:8081**.
+
+Follow [`docs/deployment-guide.md`](docs/deployment-guide.md) for the detailed command sequence. Confirm the actual filenames and resource names before running commands; adapt the cluster name to your environment.
+
+## Monitoring
+
+The backend exposes two operational endpoints:
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /healthcheck` | Returns a JSON health status |
+| `GET /metrics` | Exposes Prometheus-format metrics collected by `prom-client` |
+
+The supplied Prometheus configuration scrapes the backend at:
 
 ```text
-Database: meanStackExample
-Collection: employees
+server.mean-app.svc.cluster.local:5300/metrics
 ```
 
-The database uses a named Docker volume:
+The Kubernetes manifests include Prometheus and Grafana. Prometheus is configured with short retention and does not have a PVC defined in the supplied manifest. A Grafana PVC manifest is included.
+
+### Monitoring flow
+
+![Monitoring Flow](architecture/Monitoring-Flow.png)
+
+**Verification before claiming a working dashboard:** check that the Prometheus target is `UP`, confirm Grafana's Prometheus data source is configured, and verify the dashboard displays real metrics. The presence of deployment manifests alone does not prove that a data source or dashboard has been provisioned.
+
+## API Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/healthcheck` | Backend health status |
+| `GET` | `/metrics` | Prometheus metrics |
+| `GET` | `/employees` | Employee collection route |
+| Other CRUD methods | `/employees` and `/employees/:id` | See the backend route implementation for exact supported methods and behavior |
+
+The frontend uses the `/api/` prefix through NGINX. The proxy removes that prefix before forwarding to Express.
+
+For the precise API contract, inspect `server/src/employee.routes.ts` and the frontend's API service before documenting individual request bodies or status codes.
+
+## Persistence
+
+### Docker Compose
+
+MongoDB data is stored in the named volume:
 
 ```text
-mongo-data
+mongo-data → /data/db
 ```
 
-This means MongoDB data survives normal container recreation.
-
-For example:
+Stopping the Compose stack normally keeps the named volume:
 
 ```bash
 docker compose down
 docker compose up -d
 ```
 
-does **not** remove the named volume.
-
-To remove the database volume intentionally:
+To delete the Compose-managed volume and its stored data:
 
 ```bash
 docker compose down -v
 ```
 
-> **Warning:** `docker compose down -v` deletes the Compose-managed database volume and therefore removes the stored MongoDB data.
+> **Warning:** `docker compose down -v` is destructive for the database volume. Use it only when you intentionally want to remove local database data.
 
----
+### Kubernetes
 
-# Docker Architecture
+The MongoDB Deployment references a PersistentVolumeClaim named `mongo-data-pvc`. Check that the PVC is `Bound` before relying on persistent database storage.
 
-## Container Communication
+## Security and Configuration Notes
 
-The services communicate over the Docker Compose network.
+- Do not commit passwords, tokens, full connection strings, or real Secret values.
+- Base64-encoded Kubernetes Secret data is **not encryption**. Treat it as sensitive.
+- The backend Kubernetes manifest references `mean-mongo-credentials` and the key `DATABASE_URI`; create and manage the value locally.
+- Review backup files and old deployment backups before publishing. Remove any artifact containing credentials or private data.
+- MongoDB uses `mongo:4.4` in the supplied Compose and Kubernetes manifests. This is an old release line; plan a compatible, tested upgrade rather than changing the image tag without migration testing.
+- Docker Compose networking and Kubernetes Services provide service-to-service connectivity. Kubernetes NetworkPolicies, firewall rules, HTTPS/TLS, Trivy image scanning, and application RBAC should not be described as implemented unless they are added and verified.
+- The security/configuration diagram documents the repository's configuration references and operational components; it is not a claim that the application is production-hardened.
 
-```text
-mean-client
-     │
-     │ HTTP
-     ▼
-mean-server:5300
-     │
-     │ MongoDB protocol
-     ▼
-database:27017
-```
+### Security & Configuration Architecture
 
-Containers should use Docker service names for internal communication rather than `localhost`.
+![Security & Configuration Architecture](architecture/Security-&-Configuration-Architecture.png)
 
-For example, inside the backend container:
+## CI Workflow
 
-```text
-database:27017
-```
+The repository includes `.github/workflows/ci.yml`.
 
-is correct.
+The workflow runs on pushes to `main`, pull requests, manual dispatch, and a scheduled trigger. Its jobs include:
 
-This would be incorrect:
+- Dependency installation
+- Application build
+- Server tests
+- Integration tests
+- Seeding demo data
+- Starting the API
+- Checking `/healthcheck`
+- Smoke-testing `/employees`
 
-```text
-localhost:27017
-```
+This is **Continuous Integration (CI)**. The supplied workflow does **not** deploy the application to Kubernetes or a cloud environment, so automated Continuous Deployment (CD) is not included.
 
-because `localhost` inside the backend container refers to the backend container itself.
+## Useful Commands
 
----
-
-# Multi-Stage Builds
-
-Both application images use multi-stage Docker builds.
-
-### Client
-
-```text
-Node.js
-   ↓
-Angular production build
-   ↓
-NGINX runtime image
-```
-
-### Server
-
-```text
-Node.js
-   ↓
-TypeScript build
-   ↓
-Production Node.js runtime image
-```
-
-This keeps build dependencies separate from the final runtime image.
-
----
-
-# Data Persistence
-
-MongoDB uses:
-
-```yaml
-volumes:
-  - mongo-data:/data/db
-```
-
-The volume provides persistent database storage outside the MongoDB container lifecycle.
-
-A normal restart:
+### Docker Compose
 
 ```bash
-docker compose restart
-```
+# Show the resolved Compose configuration
+docker compose config
 
-does not remove the data.
+# Start / rebuild the stack
+docker compose up --build -d
 
-Recreating the containers with:
-
-```bash
-docker compose down
-docker compose up -d
-```
-
-also preserves the named volume.
-
----
-
-# Useful Docker Commands
-
-### View containers
-
-```bash
+# Check services
 docker compose ps
-```
 
-### View logs
-
-```bash
-docker compose logs
-```
-
-### Follow logs
-
-```bash
+# Follow all logs
 docker compose logs -f
-```
 
-### Backend logs
-
-```bash
+# Follow backend logs
 docker compose logs -f server
-```
 
-### Frontend logs
-
-```bash
-docker compose logs -f client
-```
-
-### MongoDB logs
-
-```bash
-docker compose logs -f database
-```
-
-### Restart
-
-```bash
-docker compose restart
-```
-
-### Stop containers
-
-```bash
+# Stop containers but preserve named volumes
 docker compose down
 ```
 
-### Rebuild after changing code/configuration
+### Kubernetes
 
 ```bash
-docker compose build
-docker compose up -d
+# Inspect application resources
+kubectl get pods -n mean-app
+kubectl get services -n mean-app
+kubectl get pvc -n mean-app
+
+# Inspect monitoring resources
+kubectl get pods -n monitoring
+kubectl get services -n monitoring
+
+# Check backend logs
+kubectl logs -n mean-app deployment/server
 ```
 
-### Inspect running containers
+These commands assume the resource names and namespaces match the manifests in your checkout.
 
-```bash
-docker ps
-```
+## Documentation
 
----
+- [Architecture and Mermaid diagrams](docs/architecture.md)
+- [Deployment Guide](docs/deployment-guide.md)
+- [Troubleshooting Guide](docs/troubleshooting.md)
 
-# Documentation
+## Known Limitations and Roadmap
 
-Detailed documentation is available in:
+These are potential improvements, not claims that the capabilities are already implemented:
 
-- [`docs/architecture.md`](docs/architecture.md)
-- [`docs/deployment-guide.md`](docs/deployment-guide.md)
-- [`docs/troubleshooting.md`](docs/troubleshooting.md)
+- [ ] Add and verify actual application and Grafana dashboard screenshots.
+- [ ] Test the complete Docker Compose and Kind deployment from a clean environment.
+- [ ] Confirm MongoDB authentication initialization and connection-string behavior.
+- [ ] Configure and verify a Grafana data source and dashboard.
+- [ ] Consider persistent storage and retention planning for Prometheus.
+- [ ] Plan a tested migration from the old MongoDB image.
+- [ ] Add image vulnerability scanning and document the results.
+- [ ] Consider NetworkPolicies, HTTPS/TLS, and access-control hardening where appropriate.
+- [ ] Add a CD deployment workflow only after deciding on a target environment and safe release process.
 
----
+## Attribution
 
-# Troubleshooting
-
-## Frontend Shows "Welcome to nginx!"
-
-Check the files inside the NGINX document root:
-
-```bash
-docker exec mean-client ls -lah /usr/share/nginx/html
-```
-
-The Angular build should be present.
-
-The current Angular build produces `index.csr.html`, so the client image moves it to:
-
-```text
-/usr/share/nginx/html/index.html
-```
-
-during the image build.
+This repository is based on the upstream MEAN Stack Example. Preserve the included `LICENSE` and `NOTICE` files and follow their terms when modifying or redistributing the project.
 
 ---
 
-## API Healthcheck Fails
+## Author
 
-Check:
+<div align="center">
 
-```bash
-docker compose ps
-```
+### Shivam Kumar Sinha
 
-Then inspect backend logs:
+**DevOps | Cloud Computing | Linux | Networking | Docker | Kubernetes**
 
-```bash
-docker compose logs server
-```
+[![GitHub](https://img.shields.io/badge/GitHub-Shivam--Infra--Labs-181717?logo=github)](https://github.com/Shivam-Infra-Labs)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Shivam_Kumar_Sinha-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/shivam-kumar-sinha-0a9248308/)
 
-Also test:
-
-```bash
-curl http://localhost:5300/healthcheck
-```
+</div>
 
 ---
 
-## Employee Data Is Missing
+## Support
 
-Check that MongoDB is healthy:
+If you find this project helpful, consider giving the repository a ⭐ on GitHub.
 
-```bash
-docker compose ps
-```
+<div align="center">
 
-Then inspect:
+Made with ❤️ by **Shivam Kumar Sinha**
 
-```bash
-docker compose logs database
-```
-
-Also verify that the MongoDB volume still exists.
-
-Avoid:
-
-```bash
-docker compose down -v
-```
-
-unless you intentionally want to delete the database volume.
-
----
-
-# Known Project Note: MongoDB Version
-
-This learning deployment currently uses:
-
-```text
-mongo:4.4
-```
-
-This was intentionally selected for the local learning environment.
-
-**MongoDB 4.4 is an old/EOL release and should not be considered a production recommendation.**
-
-For future production-oriented deployment, the database version should be upgraded to a currently supported MongoDB release after compatibility testing.
-
----
-
-# DevOps Roadmap
-
-The project is intentionally being developed in stages.
-
-## Phase 1 — Docker Compose ✅
-
-Completed:
-
-- Dockerized Angular frontend
-- NGINX static serving
-- NGINX reverse proxy
-- Dockerized Node.js backend
-- MongoDB container
-- Docker Compose orchestration
-- MongoDB healthcheck
-- Service dependency
-- Named persistent volume
-- Multi-stage builds
-- `.dockerignore`
-- CRUD verification
-- Restart/recreation persistence verification
-
----
-
-## Phase 2 — Kubernetes 🚧
-
-Planned:
-
-```text
-Namespace
-Deployments
-Services
-ConfigMaps
-Secrets
-Persistent storage
-Ingress
-Liveness probes
-Readiness probes
-```
-
-The application will first be deployed locally using a Kubernetes learning cluster.
-
----
-
-## Phase 3 — Advanced Kubernetes
-
-Planned:
-
-- HPA
-- RBAC
-- NetworkPolicy
-- PodDisruptionBudget
-- Centralized logging
-- Backup/restore
-- Security scanning
-- Rollback strategy
-- Smoke tests
-- Failure testing
-- Multiple environments
-
-Later:
-
-- Helm
-- Argo CD
-- Service mesh
-- Distributed tracing
-- Chaos/failure experiments
-
----
-
-## Phase 4 — AWS / EKS
-
-After the local Kubernetes implementation is stable, the project can be moved toward AWS:
-
-```text
-AWS
- │
- └── EKS
-      │
-      ├── Frontend
-      ├── Backend
-      ├── Ingress
-      └── Supporting infrastructure
-```
-
-The goal is to progressively transform the original application into a realistic DevOps/cloud portfolio project rather than jumping directly to cloud deployment.
-
----
-
-# Original Project
-
-This project is based on the original **MEAN Stack Example** application and its educational purpose.
-
-The original application demonstrates:
-
-- Angular frontend
-- Express API
-- MongoDB
-- CRUD operations
-- MongoDB schema validation
-
-The Docker and DevOps work in this repository extends that application into a containerized deployment workflow.
-
----
-
-# License
-
-The original project is distributed under the **Apache 2.0** license.
-
-See [`LICENSE`](LICENSE) for the license text.
-
----
-
-## Project Status
-
-**Current:** Docker Compose deployment completed and verified.
-
-**Next:** Kubernetes deployment.
-
----
-
-# 👨‍💻 Author
-
-**Shivam Kumar Sinha**  
-*DevOps | Cloud Computing | Linux | Networking | Docker | Kubernetes*
-
-🌐 **Connect With Me:**
-- 💼 **LinkedIn:** [Shivam Kumar Sinha](https://www.linkedin.com/in/shivam-kumar-sinha-0a9248308/)
-- 💻 **GitHub:** [Shivam-Infra-Labs](https://github.com/Shivam-Infra-Labs)
-
----
-# ⭐ Support
-
-If you find this project helpful, please consider giving it a ⭐ **Star** on GitHub!
-
+</div>

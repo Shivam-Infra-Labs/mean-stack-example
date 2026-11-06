@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+  namespace: mean-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      containers:
+        - name: mean-server
+          image: mean-stack-example-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5300
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: mean-server-config
+                  key: PORT
+            - name: DATABASE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: mean-mongo-credentials
+                  key: DATABASE_URI
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "500m"
+              memory: 384Mi
+          startupProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+  namespace: mean-app
+spec:
+  type: ClusterIP
+  selector:
+    app: server
+  ports:
+    - name: http
+      port: 5300
+      targetPort: 5300

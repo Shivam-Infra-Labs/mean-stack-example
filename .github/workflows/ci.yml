@@ -83,7 +83,7 @@ jobs:
         run: npm run test:server
 
       - name: Client unit tests
-        run: npm run test:client -- --watch=false
+        run: npm run test:client -- -- --watch=false
 
       - name: Server integration tests
         run: npm run test:integration

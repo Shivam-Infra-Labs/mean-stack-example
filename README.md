@@ -372,7 +372,7 @@ The MongoDB Deployment references a PersistentVolumeClaim named `mongo-data-pvc`
 
 ### Security & Configuration Architecture
 
-![Security & Configuration Architecture](architecture/Security & Configuration Architecture.png)
+![Security & Configuration Architecture](architecture/Security-&-Configuration-Architecture.png)
 
 ## CI Workflow
 
